@@ -1,0 +1,66 @@
+name: V7 - Build, Push, Deploy to GKE
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 🟣 Login to Docker Hub
+      - name: Login to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      # 🟣 Build Images
+      - name: Build Images
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/api-service:${{ github.sha }} -f Dockerfile.api .
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/rag-service:${{ github.sha }} -f Dockerfile.rag .
+
+      # 🟣 Push Images
+      - name: Push Images
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/api-service:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/rag-service:${{ github.sha }}
+
+      # 🟣 Authenticate to GCP
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      # 🟣 Setup gcloud
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      # 🟣 Get GKE credentials
+      - name: Get GKE credentials
+        run: |
+          gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} \
+            --region ${{ secrets.GKE_REGION }} \
+            --project ${{ secrets.GCP_PROJECT_ID }}
+
+      # 🟣 Update image names in YAML (IMPORTANT)
+      - name: Update image tags
+        run: |
+          sed -i 's|mayurbrijwani/api-service:.*|${{ secrets.DOCKER_USERNAME }}/api-service:${{ github.sha }}|g' k8s/api-deployment.yaml
+          sed -i 's|mayurbrijwani/rag-service:.*|${{ secrets.DOCKER_USERNAME }}/rag-service:${{ github.sha }}|g' k8s/rag-deployment.yaml
+
+      # 🟣 Deploy to GKE
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f .*yml
+
+      # 🟣 Verify deployment
+      - name: Check pods
+        run: kubectl get pods
+
+      # 🟣 Get service
+      - name: Get service
+        run: kubectl get svc
