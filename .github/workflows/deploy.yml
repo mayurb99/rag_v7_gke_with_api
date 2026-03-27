@@ -47,8 +47,8 @@ jobs:
       # 🟣 Update image names in YAML (IMPORTANT)
       - name: Update image tags
         run: |
-          sed -i 's|mayurbrijwani/api-service:.*|${{ secrets.DOCKER_USERNAME }}/api-service:${{ github.sha }}|g' k8s/api-deployment.yaml
-          sed -i 's|mayurbrijwani/rag-service:.*|${{ secrets.DOCKER_USERNAME }}/rag-service:${{ github.sha }}|g' k8s/rag-deployment.yaml
+          sed -i 's|mayurbrijwani/api-service:.*|${{ secrets.DOCKER_USERNAME }}/api-service:${{ github.sha }}|g' api-deployment.yaml
+          sed -i 's|mayurbrijwani/rag-service:.*|${{ secrets.DOCKER_USERNAME }}/rag-service:${{ github.sha }}|g' rag-deployment.yaml
 
       # 🟣 Deploy to GKE
       - name: Deploy to Kubernetes
