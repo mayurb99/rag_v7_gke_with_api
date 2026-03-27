@@ -53,7 +53,10 @@ jobs:
       # 🟣 Deploy to GKE
       - name: Deploy to Kubernetes
         run: |
-          kubectl apply -f *.yaml
+          kubectl apply -f api-deployment.yaml
+          kubectl apply -f api-service.yaml
+          kubectl apply -f rag-deployment.yaml
+          kubectl apply -f rag-service.yaml
 
       # 🟣 Verify deployment
       - name: Check pods
